@@ -31,6 +31,8 @@ dependencies {
     implementation("io.ktor:ktor-server-core:2.3.0")
     implementation("io.ktor:ktor-server-html-builder:2.3.0")
     //implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
+
+    implementation("org.slf4j:slf4j-simple:1.7.32")
 }
 
 compose.desktop {
