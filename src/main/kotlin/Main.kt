@@ -9,6 +9,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import ui.MainView
+import ui.MainViewModel
 import util.Env
 
 @Composable
@@ -27,6 +29,7 @@ fun App() {
 
 fun main() = application {
     Window(onCloseRequest = ::exitApplication) {
-        App()
+        val viewModel = remember { MainViewModel() }
+        MainView(viewModel)
     }
 }
