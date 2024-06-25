@@ -6,10 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
-import model.CurrentlyPlaying
-import model.SpotifyUser
-import model.Track
-import model.UserQueue
+import model.*
 
 import network.SpotifyApi
 import retrofit2.HttpException
@@ -120,6 +117,33 @@ class MainViewModel : ViewModel() {
             }
         }
 
+    }
+
+    fun searchAndAddSongToQueue(query: String){
+        viewModelScope.launch(Dispatchers.Main) {
+            val authHeader = "Bearer $authToken"
+
+            try {
+                val response: Response<SearchResult> = SpotifyApi.apiService.searchSong(authHeader,query)
+                if(response.isSuccessful){
+                    val track = response.body()?.tracks?.items?.firstOrNull()
+                    if(track != null){
+                        addSongToQueue(track.uri)
+                    } else{
+                        responseMessage = "Song not found"
+                    }
+                } else{
+                    responseMessage = "search failed"
+                }
+            } catch (e:HttpException){
+                if (e.code() == 401){
+                    refreshTokenAndRetry { searchAndAddSongToQueue(query) }
+                } else{
+                    e.printStackTrace()
+                    responseMessage = "Failed to search"
+                }
+            }
+        }
     }
 
     fun addSongToQueue(uri: String){

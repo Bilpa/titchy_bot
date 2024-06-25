@@ -1,6 +1,7 @@
 package network
 
 import model.CurrentlyPlaying
+import model.SearchResult
 import model.SpotifyUser
 import model.UserQueue
 import retrofit2.Response
@@ -24,5 +25,13 @@ interface SpotifyApiService {
         @Header("Authorization") authHeader: String,
         @Query("uri") uri:String
     ): Response<Unit>
+
+    @GET("search")
+    suspend fun searchSong(
+        @Header("Authorization") authHeader: String,
+        @Query("q") query: String,
+        @Query("type") type: String = "track",
+        @Query("limit") limit: Int = 1
+    ): Response<SearchResult>
 
 }

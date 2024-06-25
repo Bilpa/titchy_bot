@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 @Preview
 fun MainView(viewModel: MainViewModel) {
 
-    var trackUri by remember { mutableStateOf("") }
+    var trackTitle by remember { mutableStateOf("") }
 
     MaterialTheme {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -47,16 +47,16 @@ fun MainView(viewModel: MainViewModel) {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 TextField(
-                    value = trackUri,
-                    onValueChange = {trackUri = it},
-                    label = { Text("Track Uri") },
+                    value = trackTitle,
+                    onValueChange = {trackTitle = it},
+                    label = { Text("song title") },
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(onClick = {
-                    viewModel.addSongToQueue(trackUri)
+                    viewModel.searchAndAddSongToQueue(trackTitle)
                 }){
                     Text("Add to Queue")
                 }
