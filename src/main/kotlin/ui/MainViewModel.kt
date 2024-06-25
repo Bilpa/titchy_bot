@@ -22,6 +22,7 @@ class MainViewModel : ViewModel() {
     var userProfile by mutableStateOf<SpotifyUser?>(null)
     var currentlyPlaying by mutableStateOf<CurrentlyPlaying?>(null)
     var nextInQueue by mutableStateOf<Track?>(null)
+    var responseMessage by mutableStateOf<String?>(null)
 
     private var pollingJob: Job? = null
 
@@ -119,6 +120,32 @@ class MainViewModel : ViewModel() {
             }
         }
 
+    }
+
+    fun addSongToQueue(uri: String){
+        viewModelScope.launch(Dispatchers.Main) {
+            val authHeader = "Bearer ${authToken}"
+
+            try {
+                val response: Response<Unit> = SpotifyApi.apiService.addSongToQueue(authHeader, uri)
+                if (response.isSuccessful){
+                    loadUserQueue(authToken!!)
+                    responseMessage = "Song added to queue"
+                } else{
+                    println("uri = ${uri}")
+                    responseMessage = "Failed to add song to queue"
+                }
+            } catch (e:HttpException){
+                if(e.code() == 401){
+                    refreshTokenAndRetry {
+                        addSongToQueue(uri)
+                    }
+                } else{
+                    e.printStackTrace()
+                    responseMessage = "Failed to add song to queue"
+                }
+            }
+        }
     }
 
     private fun refreshTokenAndRetry(onTokenRefreshed: (String) -> Unit) {
