@@ -5,8 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import model.SpotifyUser
 import network.CurrentlyPlaying
 import network.SpotifyApi
@@ -20,13 +19,25 @@ class MainViewModel : ViewModel() {
     var userProfile by mutableStateOf<SpotifyUser?>(null)
     var currentlyPlaying by mutableStateOf<CurrentlyPlaying?>(null)
 
+    private var pollingJob: Job? = null
+
     fun authenticate() {
         AuthUtil.authenticate(Env.spotifyClientId, Env.spotifyClientSecret) { token ->
 
             authToken = token
             loadUserProfile(token)
-            loadCurrentlyPlaying(token)
+            startPollingCurrentlyPlaying(token)
 
+        }
+    }
+
+    private fun startPollingCurrentlyPlaying(token: String) {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch(Dispatchers.IO) {
+            while (isActive){
+                loadCurrentlyPlaying(token)
+                delay(5000)
+            }
         }
     }
 
