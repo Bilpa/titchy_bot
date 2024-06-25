@@ -6,8 +6,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
+import model.CurrentlyPlaying
 import model.SpotifyUser
-import network.CurrentlyPlaying
+
 import network.SpotifyApi
 import retrofit2.HttpException
 import retrofit2.Response
