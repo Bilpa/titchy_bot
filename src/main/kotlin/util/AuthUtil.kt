@@ -42,7 +42,7 @@ object AuthUtil {
 
         // Open Spotify authentication URL
         val authUri =
-            URI("https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=user-read-email%20user-read-private%20user-read-currently-playing")
+            URI("https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=user-read-email%20user-read-private%20user-read-currently-playing%20user-read-playback-state")
         Desktop.getDesktop().browse(authUri)
 
         // Wait until auth code is set

@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
 import model.CurrentlyPlaying
 import model.SpotifyUser
+import model.Track
+import model.UserQueue
 
 import network.SpotifyApi
 import retrofit2.HttpException
@@ -19,6 +21,7 @@ class MainViewModel : ViewModel() {
     var authToken by mutableStateOf<String?>(null)
     var userProfile by mutableStateOf<SpotifyUser?>(null)
     var currentlyPlaying by mutableStateOf<CurrentlyPlaying?>(null)
+    var nextInQueue by mutableStateOf<Track?>(null)
 
     private var pollingJob: Job? = null
 
@@ -28,6 +31,7 @@ class MainViewModel : ViewModel() {
             authToken = token
             loadUserProfile(token)
             startPollingCurrentlyPlaying(token)
+
 
         }
     }
@@ -69,6 +73,9 @@ class MainViewModel : ViewModel() {
 
                 if (response.isSuccessful){
                     currentlyPlaying = response.body()
+                    println("load currently playing...")
+                    println("response = ${response.body()}")
+                    loadUserQueue(token)
                 }
                 else {
                     currentlyPlaying = null
@@ -85,6 +92,33 @@ class MainViewModel : ViewModel() {
                 }
             }
         }
+    }
+
+    private fun loadUserQueue(token: String) {
+        println("load user queue...")
+        viewModelScope.launch(Dispatchers.Main) {
+            val authHeader = "Bearer $token"
+            try {
+
+                val response: Response<UserQueue?> = SpotifyApi.apiService.getUserQueue(authHeader)
+                println("response = ${response.body()}")
+                if (response.isSuccessful){
+                    nextInQueue = response.body()?.queue?.firstOrNull()
+                } else{
+                    nextInQueue = null
+                }
+            } catch (e:HttpException){
+                if (e.code() == 401) {
+                    refreshTokenAndRetry { newToken ->
+                        loadUserQueue(newToken)
+                    }
+                } else {
+                    e.printStackTrace()
+                    nextInQueue = null
+                }
+            }
+        }
+
     }
 
     private fun refreshTokenAndRetry(onTokenRefreshed: (String) -> Unit) {

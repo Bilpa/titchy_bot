@@ -33,6 +33,10 @@ fun MainView(viewModel: MainViewModel) {
                 viewModel.currentlyPlaying?.item?.let {
                     Text("Currently Playing: ${it.name} by ${it.artists.joinToString(", ") { artist -> artist.name }}")
                 } ?: Text("Not currently playing anything")
+
+                viewModel.nextInQueue?.let {
+                    Text("Next in queue: ${it.name} by ${it.artists.joinToString(", ") {artist -> artist.name}}")
+                } ?: Text("Nothing in queue")
             }
         }
     }
