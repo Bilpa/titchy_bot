@@ -28,6 +28,7 @@ fun App() {
 }
 
 fun main() = application {
+    println("starting app...")
     Window(onCloseRequest = ::exitApplication) {
         val viewModel = remember { MainViewModel() }
         MainView(viewModel)
