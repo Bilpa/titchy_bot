@@ -6,10 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
-import model.CurrentlyPlaying
-import model.SpotifyUser
-import model.Track
-import model.UserQueue
+import model.*
 
 import network.SpotifyApi
 import retrofit2.HttpException
@@ -22,6 +19,8 @@ class MainViewModel : ViewModel() {
     var userProfile by mutableStateOf<SpotifyUser?>(null)
     var currentlyPlaying by mutableStateOf<CurrentlyPlaying?>(null)
     var nextInQueue by mutableStateOf<Track?>(null)
+    var responseMessage by mutableStateOf<String?>(null)
+    var recentlyAddedTrack by mutableStateOf<Track?>(null)
 
     private var pollingJob: Job? = null
 
@@ -119,6 +118,60 @@ class MainViewModel : ViewModel() {
             }
         }
 
+    }
+
+    fun searchAndAddSongToQueue(query: String){
+        viewModelScope.launch(Dispatchers.Main) {
+            val authHeader = "Bearer $authToken"
+
+            try {
+                val response: Response<SearchResult> = SpotifyApi.apiService.searchSong(authHeader,query)
+                if(response.isSuccessful){
+                    val track = response.body()?.tracks?.items?.firstOrNull()
+                    if(track != null){
+                        addSongToQueue(track)
+                    } else{
+                        responseMessage = "Song not found"
+                    }
+                } else{
+                    responseMessage = "search failed"
+                }
+            } catch (e:HttpException){
+                if (e.code() == 401){
+                    refreshTokenAndRetry { searchAndAddSongToQueue(query) }
+                } else{
+                    e.printStackTrace()
+                    responseMessage = "Failed to search"
+                }
+            }
+        }
+    }
+
+    fun addSongToQueue(track: Track){
+        viewModelScope.launch(Dispatchers.Main) {
+            val authHeader = "Bearer ${authToken}"
+
+            try {
+                val response: Response<Unit> = SpotifyApi.apiService.addSongToQueue(authHeader, track.uri)
+                if (response.isSuccessful){
+                    loadUserQueue(authToken!!)
+                    recentlyAddedTrack = track
+                    responseMessage = "Song added to queue"
+                } else{
+
+                    responseMessage = "Failed to add song to queue"
+                }
+            } catch (e:HttpException){
+                if(e.code() == 401){
+                    refreshTokenAndRetry {
+                        addSongToQueue(track)
+                    }
+                } else{
+                    e.printStackTrace()
+                    responseMessage = "Failed to add song to queue"
+                }
+            }
+        }
     }
 
     private fun refreshTokenAndRetry(onTokenRefreshed: (String) -> Unit) {
