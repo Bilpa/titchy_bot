@@ -2,12 +2,9 @@ package ui
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material.*
 
 
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -18,8 +15,25 @@ fun MainView(viewModel: MainViewModel) {
 
     var trackTitle by remember { mutableStateOf("") }
 
+    val snackBarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(viewModel.recentlyAddedTrack){
+        viewModel.recentlyAddedTrack?.let {
+            val result = snackBarHostState.showSnackbar(
+                message = "Added to Queue: ${it.name} by ${it.artists.joinToString(", ") { it.name }}",
+                duration = SnackbarDuration.Short
+            )
+            if (result == SnackbarResult.Dismissed){
+                viewModel.recentlyAddedTrack = null
+            }
+
+        }
+    }
+
     MaterialTheme {
         Column(modifier = Modifier.padding(16.dp)) {
+
+            SnackbarHost(hostState = snackBarHostState)
             if (viewModel.authToken == null) {
                 Button(onClick = {
                     viewModel.authenticate()
@@ -68,3 +82,5 @@ fun MainView(viewModel: MainViewModel) {
         }
     }
 }
+
+
