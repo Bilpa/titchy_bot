@@ -18,9 +18,9 @@ fun MainView(viewModel: MainViewModel) {
     val snackBarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(viewModel.recentlyAddedTrack){
-        viewModel.recentlyAddedTrack?.let {
+        viewModel.recentlyAddedTrack?.let { track ->
             val result = snackBarHostState.showSnackbar(
-                message = "Added to Queue: ${it.name} by ${it.artists.joinToString(", ") { it.name }}",
+                message = "Added to Queue: ${track.name} by ${track.artists.joinToString(", ") { it.name }}",
                 duration = SnackbarDuration.Short
             )
             if (result == SnackbarResult.Dismissed){
@@ -34,6 +34,7 @@ fun MainView(viewModel: MainViewModel) {
         Column(modifier = Modifier.padding(16.dp)) {
 
             SnackbarHost(hostState = snackBarHostState)
+
             if (viewModel.authToken == null) {
                 Button(onClick = {
                     viewModel.authenticate()
