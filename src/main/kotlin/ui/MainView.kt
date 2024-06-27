@@ -35,9 +35,9 @@ fun MainView(viewModel: MainViewModel) {
 
             SnackbarHost(hostState = snackBarHostState)
 
-            if (viewModel.authToken == null) {
+            if (viewModel.spotifytoken == null) {
                 Button(onClick = {
-                    viewModel.authenticate()
+                    viewModel.authenticateWithSpotify()
                 }) {
                     Text("Authenticate with Spotify")
                 }

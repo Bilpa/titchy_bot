@@ -19,13 +19,15 @@ import java.util.concurrent.atomic.AtomicReference
 object AuthUtil {
 
     private const val redirectUri = "http://localhost:8080/callback"
-    private val authCode = AtomicReference<String?>()
-    private lateinit var refreshToken: String
+    private val spotifyAuthCode = AtomicReference<String?>()
+    private val twitchAuthCode = AtomicReference<String?>()
+    private lateinit var spotifyRefreshToken: String
+    private lateinit var twitchRefreshToken: String
 
     fun authenticate(
         clientId: String,
         clientSecret: String,
-
+        target: String,
         onTokenReceived: (String) -> Unit
     ) {
 
@@ -34,33 +36,79 @@ object AuthUtil {
             routing {
                 get("/callback") {
                     val code = call.parameters["code"]
-                    authCode.set(code)
+                    if (target == "spotify"){
+                        spotifyAuthCode.set(code)
+                    }
+                    else if(target == "twitch"){
+                        twitchAuthCode.set(code)
+                    }
+
                     call.respondText("Authentication successful! You can close this window.", ContentType.Text.Html)
                 }
             }
         }.start()
 
-        // Open Spotify authentication URL
-        val authUri =
-            URI("https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=user-read-email%20user-read-private%20user-read-currently-playing%20user-read-playback-state%20user-modify-playback-state")
-        Desktop.getDesktop().browse(authUri)
 
-        // Wait until auth code is set
-        while (authCode.get() == null) {
-            Thread.sleep(100)
+
+        if (target == "spotify") {
+            // Open Spotify authentication URL
+            val authUri = URI("https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=user-read-email%20user-read-private%20user-read-currently-playing%20user-read-playback-state%20user-modify-playback-state")
+            Desktop.getDesktop().browse(authUri)
+            // Wait until auth code is set
+            while (spotifyAuthCode.get() == null) {
+                Thread.sleep(100)
+            }
+
+            // Exchange auth code for access token
+            val code = spotifyAuthCode.get()!!
+            val response = getSpotifyAccessToken(code, clientId, clientSecret)
+            val accessToken =  response["access_token"].asString
+            spotifyRefreshToken = response["refresh_token"].asString
+
+            onTokenReceived(accessToken)
+        }
+        else if (target == "twitch") {
+            // Open Spotify authentication URL
+            val authUri = URI("https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=user-read-email%20user-read-private%20user-read-currently-playing%20user-read-playback-state%20user-modify-playback-state")
+            Desktop.getDesktop().browse(authUri)
+            // Wait until auth code is set
+            while (twitchAuthCode.get() == null) {
+                Thread.sleep(100)
+            }
+
+            // Exchange auth code for access token
+            val code = twitchAuthCode.get()!!
+            val response = getTwitchAccessToken(code, clientId, clientSecret)
+            val accessToken =  response["access_token"].asString
+            spotifyRefreshToken = response["refresh_token"].asString
+
+            onTokenReceived(accessToken)
         }
 
-        // Exchange auth code for access token
-        val code = authCode.get()!!
-        val response = getAccessToken(code, clientId, clientSecret)
-        val accessToken =  response["access_token"].asString
-        refreshToken = response["refresh_token"].asString
 
-        onTokenReceived(accessToken)
+
+
+    }
+
+    private fun getTwitchAccessToken(code: String, clientId: String, clientSecret: String): JsonObject {
+        val client = HttpClient.newBuilder().build()
+
+        val request = HttpRequest.newBuilder()
+            .uri(URI.create("https://accounts.spotify.com/api/token"))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .POST(HttpRequest.BodyPublishers.ofString("grant_type=authorization_code&code=$code&redirect_uri=${redirectUri}&client_id=$clientId&client_secret=$clientSecret"))
+            .build()
+
+        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+        val json = Gson().fromJson(response.body(), JsonObject::class.java)
+        println("json = ${json}")
+        return json
     }
 
 
-    private fun getAccessToken(code: String, clientId: String, clientSecret: String): JsonObject {
+
+
+    private fun getSpotifyAccessToken(code: String, clientId: String, clientSecret: String): JsonObject {
         val client = HttpClient.newBuilder().build()
 
         val request = HttpRequest.newBuilder()
@@ -76,13 +124,13 @@ object AuthUtil {
 
     }
 
-    fun refreshToken(clientId: String, clientSecret: String): String {
+    fun refreshSpotifyToken(clientId: String, clientSecret: String): String {
         val client = HttpClient.newBuilder().build()
         println("refreshing...")
         val request = HttpRequest.newBuilder()
             .uri(URI.create("https://accounts.spotify.com/api/token"))
             .header("Content-Type", "application/x-www-form-urlencoded")
-            .POST(HttpRequest.BodyPublishers.ofString("grant_type=refresh_token&refresh_token=$refreshToken&client_id=$clientId&client_secret=$clientSecret"))
+            .POST(HttpRequest.BodyPublishers.ofString("grant_type=refresh_token&refresh_token=$spotifyRefreshToken&client_id=$clientId&client_secret=$clientSecret"))
             .build()
 
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
