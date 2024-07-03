@@ -24,6 +24,31 @@ object AuthUtil {
     private lateinit var spotifyRefreshToken: String
     private lateinit var twitchRefreshToken: String
 
+
+    init {
+        startServer()
+    }
+
+    private fun startServer() {
+        //start local server to listen for the redirect
+        embeddedServer(Netty, port = 8080) {
+            routing {
+                get("/callback") {
+                    val code = call.parameters["code"]
+                    val state = call.parameters["state"]
+                    if (state == "spotify"){
+                        spotifyAuthCode.set(code)
+                    }
+                    else if(state == "twitch"){
+                        twitchAuthCode.set(code)
+                    }
+
+                    call.respondText("Authentication successful! You can close this window.", ContentType.Text.Html)
+                }
+            }
+        }.start(wait = false)
+    }
+
     fun authenticate(
         clientId: String,
         clientSecret: String,
@@ -31,72 +56,55 @@ object AuthUtil {
         onTokenReceived: (String) -> Unit
     ) {
 
-        //start local server to listen for the redirect
-        embeddedServer(Netty, port = 8080) {
-            routing {
-                get("/callback") {
-                    val code = call.parameters["code"]
-                    if (target == "spotify"){
-                        spotifyAuthCode.set(code)
-                    }
-                    else if(target == "twitch"){
-                        twitchAuthCode.set(code)
-                    }
-
-                    call.respondText("Authentication successful! You can close this window.", ContentType.Text.Html)
-                }
-            }
-        }.start()
-
-
-
         if (target == "spotify") {
             // Open Spotify authentication URL
-            val authUri = URI("https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=user-read-email%20user-read-private%20user-read-currently-playing%20user-read-playback-state%20user-modify-playback-state")
+            val authUri = URI("https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=user-read-email%20user-read-private%20user-read-currently-playing%20user-read-playback-state%20user-modify-playback-state&state=spotify")
             Desktop.getDesktop().browse(authUri)
-            // Wait until auth code is set
-            while (spotifyAuthCode.get() == null) {
-                Thread.sleep(100)
-            }
 
-            // Exchange auth code for access token
-            val code = spotifyAuthCode.get()!!
-            val response = getSpotifyAccessToken(code, clientId, clientSecret)
-            val accessToken =  response["access_token"].asString
-            spotifyRefreshToken = response["refresh_token"].asString
+            waitForAuthCode(target, clientId, clientSecret, onTokenReceived)
 
-            onTokenReceived(accessToken)
         }
         else if (target == "twitch") {
-            // Open Spotify authentication URL
-            val authUri = URI("https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=user-read-email%20user-read-private%20user-read-currently-playing%20user-read-playback-state%20user-modify-playback-state")
+            // Open twitch authentication URL
+            val authUri = URI("https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=user-read-email%20user-read-private%20user-read-currently-playing%20user-read-playback-state%20user-modify-playback-state&state=twitch")
             Desktop.getDesktop().browse(authUri)
-            // Wait until auth code is set
-            while (twitchAuthCode.get() == null) {
-                Thread.sleep(100)
-            }
 
-            // Exchange auth code for access token
-            val code = twitchAuthCode.get()!!
-            val response = getTwitchAccessToken(code, clientId, clientSecret)
-            val accessToken =  response["access_token"].asString
-            spotifyRefreshToken = response["refresh_token"].asString
+            waitForAuthCode(target, clientId, clientSecret, onTokenReceived)
+        }
+    }
 
-            onTokenReceived(accessToken)
+    private fun waitForAuthCode(
+        target: String,
+        clientId: String,
+        clientSecret: String,
+        onTokenReceived: (String) -> Unit
+    ) {
+        val authCode = if (target == "spotify") spotifyAuthCode else twitchAuthCode
+
+        while (authCode.get() == null) {
+            Thread.sleep(100)
         }
 
+        val code = authCode.get()!!
+        val response = if (target == "spotify") getSpotifyAccessToken(code, clientId, clientSecret) else getTwitchAccessToken(code, clientId, clientSecret)
+        val accessToken = response["access_token"].asString
 
+        if (target == "spotify") {
+            spotifyRefreshToken = response["refresh_token"].asString
+        } else {
+            twitchRefreshToken = response["refresh_token"].asString
+        }
 
-
+        onTokenReceived(accessToken)
     }
 
     private fun getTwitchAccessToken(code: String, clientId: String, clientSecret: String): JsonObject {
         val client = HttpClient.newBuilder().build()
 
         val request = HttpRequest.newBuilder()
-            .uri(URI.create("https://accounts.spotify.com/api/token"))
+            .uri(URI.create("https://id.twitch.tv/oauth2/token"))
             .header("Content-Type", "application/x-www-form-urlencoded")
-            .POST(HttpRequest.BodyPublishers.ofString("grant_type=authorization_code&code=$code&redirect_uri=${redirectUri}&client_id=$clientId&client_secret=$clientSecret"))
+            .POST(HttpRequest.BodyPublishers.ofString("grant_type=authorization_code&code=$code&redirect_uri=$redirectUri&client_id=$clientId&client_secret=$clientSecret"))
             .build()
 
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
