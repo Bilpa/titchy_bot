@@ -13,4 +13,10 @@ object Env {
 
     val redirectUri: String
         get() = dotenv["REDIRECT_URI"] ?: error("REDIRECT_URI not found")
+
+    val twitchClientId: String
+        get() = dotenv["TWITCH_CLIENT_ID"] ?: error("TWITCH_CLIENT_ID not found")
+
+    val twitchClientSecret: String
+        get( )= dotenv["TWITCH_CLIENT_SECRET"] ?: error("TWITCH_CLIENT_SECRET not found")
 }

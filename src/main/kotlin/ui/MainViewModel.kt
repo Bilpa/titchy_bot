@@ -15,7 +15,8 @@ import util.AuthUtil
 import util.Env
 
 class MainViewModel : ViewModel() {
-    var authToken by mutableStateOf<String?>(null)
+    var spotifyToken by mutableStateOf<String?>(null)
+    var twitchToken by mutableStateOf<String?>(null)
     var userProfile by mutableStateOf<SpotifyUser?>(null)
     var currentlyPlaying by mutableStateOf<CurrentlyPlaying?>(null)
     var nextInQueue by mutableStateOf<Track?>(null)
@@ -24,14 +25,22 @@ class MainViewModel : ViewModel() {
 
     private var pollingJob: Job? = null
 
-    fun authenticate() {
-        AuthUtil.authenticate(Env.spotifyClientId, Env.spotifyClientSecret) { token ->
+    fun authenticateWithSpotify() {
+        AuthUtil.authenticate(Env.spotifyClientId, Env.spotifyClientSecret, "spotify") { token ->
 
-            authToken = token
+            spotifyToken = token
             loadUserProfile(token)
             startPollingCurrentlyPlaying(token)
+            println("spotifyToken = ${spotifyToken}")
 
 
+        }
+    }
+
+    fun authenticateWithTwitch(){
+        AuthUtil.authenticate(Env.twitchClientId, Env.twitchClientSecret, "twitch") { token ->
+            twitchToken = token
+            println("twitchToken = ${twitchToken}")
         }
     }
 
@@ -122,7 +131,7 @@ class MainViewModel : ViewModel() {
 
     fun searchAndAddSongToQueue(query: String){
         viewModelScope.launch(Dispatchers.Main) {
-            val authHeader = "Bearer $authToken"
+            val authHeader = "Bearer $spotifyToken"
 
             try {
                 val response: Response<SearchResult> = SpotifyApi.apiService.searchSong(authHeader,query)
@@ -149,12 +158,12 @@ class MainViewModel : ViewModel() {
 
     fun addSongToQueue(track: Track){
         viewModelScope.launch(Dispatchers.Main) {
-            val authHeader = "Bearer ${authToken}"
+            val authHeader = "Bearer ${spotifyToken}"
 
             try {
                 val response: Response<Unit> = SpotifyApi.apiService.addSongToQueue(authHeader, track.uri)
                 if (response.isSuccessful){
-                    loadUserQueue(authToken!!)
+                    loadUserQueue(spotifyToken!!)
                     recentlyAddedTrack = track
                     responseMessage = "Song added to queue"
                 } else{
@@ -178,8 +187,8 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
 
             try {
-                val newToken = AuthUtil.refreshToken(Env.spotifyClientId, Env.spotifyClientSecret)
-                authToken = newToken
+                val newToken = AuthUtil.refreshSpotifyToken(Env.spotifyClientId, Env.spotifyClientSecret)
+                spotifyToken = newToken
                 onTokenRefreshed(newToken)
             } catch (e: Exception) {
                 e.printStackTrace()
