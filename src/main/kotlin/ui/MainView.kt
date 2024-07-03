@@ -35,11 +35,16 @@ fun MainView(viewModel: MainViewModel) {
 
             SnackbarHost(hostState = snackBarHostState)
 
-            if (viewModel.spotifytoken == null) {
+            if (viewModel.spotifyToken == null || viewModel.twitchToken == null) {
                 Button(onClick = {
                     viewModel.authenticateWithSpotify()
                 }) {
                     Text("Authenticate with Spotify")
+                }
+                Button(onClick = {
+                    viewModel.authenticateWithTwitch()
+                }) {
+                    Text("Authenticate with Twitch")
                 }
             } else {
                 viewModel.userProfile?.let {

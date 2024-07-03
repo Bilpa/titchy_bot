@@ -55,7 +55,7 @@ object AuthUtil {
         target: String,
         onTokenReceived: (String) -> Unit
     ) {
-
+        println("target = ${target}")
         if (target == "spotify") {
             // Open Spotify authentication URL
             val authUri = URI("https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=user-read-email%20user-read-private%20user-read-currently-playing%20user-read-playback-state%20user-modify-playback-state&state=spotify")
@@ -66,7 +66,7 @@ object AuthUtil {
         }
         else if (target == "twitch") {
             // Open twitch authentication URL
-            val authUri = URI("https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=user-read-email%20user-read-private%20user-read-currently-playing%20user-read-playback-state%20user-modify-playback-state&state=twitch")
+            val authUri = URI("https://id.twitch.tv/oauth2/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=user:read:email&state=twitch")
             Desktop.getDesktop().browse(authUri)
 
             waitForAuthCode(target, clientId, clientSecret, onTokenReceived)
