@@ -175,6 +175,11 @@ object AuthUtil {
                         sendMessageToTwitchChat("${event.user?.nick} wants to add ${song}")
                         viewModel.searchAndAddSongToQueue(song)
                     }
+                    if (event.message.startsWith("!queue")){
+
+                        sendMessageToTwitchChat("${viewModel.currentQueue}")
+
+                    }
                 }
             })
             .buildConfiguration()

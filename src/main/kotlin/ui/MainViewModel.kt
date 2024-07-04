@@ -23,6 +23,7 @@ class MainViewModel : ViewModel() {
     var nextInQueue by mutableStateOf<Track?>(null)
     var responseMessage by mutableStateOf<String?>(null)
     var recentlyAddedTrack by mutableStateOf<Track?>(null)
+    var currentQueue by mutableStateOf<String?>(null)
 
     val channelName = "muminslayer"
 
@@ -119,6 +120,13 @@ class MainViewModel : ViewModel() {
                 println("response = ${response.body()}")
                 if (response.isSuccessful){
                     nextInQueue = response.body()?.queue?.firstOrNull()
+                    currentQueue = "current queue is: "
+                    var count = 1
+                    response.body()?.queue?.forEach { track ->
+                        currentQueue += "$count. ${track.name} by ${track.artists.get(0).name} "
+                        count++
+                    }
+                    println("queue = ${currentQueue}")
                 } else{
                     nextInQueue = null
                 }
@@ -135,6 +143,8 @@ class MainViewModel : ViewModel() {
         }
 
     }
+
+
 
     fun searchAndAddSongToQueue(query: String){
         viewModelScope.launch(Dispatchers.Main) {
