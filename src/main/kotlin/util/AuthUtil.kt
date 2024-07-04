@@ -14,6 +14,7 @@ import org.pircbotx.Configuration
 import org.pircbotx.hooks.ListenerAdapter
 import org.pircbotx.hooks.events.ConnectEvent
 import org.pircbotx.hooks.events.MessageEvent
+import ui.MainViewModel
 import java.awt.Desktop
 import java.net.URI
 import java.net.http.HttpClient
@@ -34,9 +35,13 @@ object AuthUtil {
     private lateinit var twitchRefreshToken: String
 
     private lateinit var twitchBot: PircBotX
+
+    lateinit var viewModel: MainViewModel
     init {
         startServer()
     }
+
+
 
     private fun startServer() {
         //start local server to listen for the redirect
@@ -165,6 +170,11 @@ object AuthUtil {
             .addListener(object : ListenerAdapter() {
                 override fun onMessage(event: MessageEvent) {
                     println("[Twitch Chat] ${event.user?.nick}: ${event.message}")
+                    if (event.message.startsWith("!add")){
+                        val song = event.message.substringAfter(" ")
+                        sendMessageToTwitchChat("${event.user?.nick} wants to add ${song}")
+                        viewModel.searchAndAddSongToQueue(song)
+                    }
                 }
             })
             .buildConfiguration()
