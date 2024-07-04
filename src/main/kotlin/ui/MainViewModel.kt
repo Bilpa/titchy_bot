@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+
 import kotlinx.coroutines.*
 import model.*
 
@@ -22,6 +23,8 @@ class MainViewModel : ViewModel() {
     var nextInQueue by mutableStateOf<Track?>(null)
     var responseMessage by mutableStateOf<String?>(null)
     var recentlyAddedTrack by mutableStateOf<Track?>(null)
+
+    val channelName = "muminslayer"
 
     private var pollingJob: Job? = null
 
@@ -41,8 +44,12 @@ class MainViewModel : ViewModel() {
         AuthUtil.authenticate(Env.twitchClientId, Env.twitchClientSecret, "twitch") { token ->
             twitchToken = token
             println("twitchToken = ${twitchToken}")
+            connectToTwitchChat()
+
         }
     }
+
+
 
     private fun startPollingCurrentlyPlaying(token: String) {
         pollingJob?.cancel()
@@ -195,4 +202,15 @@ class MainViewModel : ViewModel() {
             }
         }
     }
+
+    private fun connectToTwitchChat() {
+        AuthUtil.connectToTwitchChat("titchy_bot", Env.botOauthToken, "muminslayer")
+
+    }
+
+    public fun sendMessageToTwitch(){
+        AuthUtil.sendMessageToTwitchChat("testing...")
+    }
+
+
 }
