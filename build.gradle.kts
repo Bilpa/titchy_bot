@@ -11,6 +11,7 @@ version = "1.0-SNAPSHOT"
 repositories {
     mavenCentral()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    maven (  "https://jitpack.io" )
     google()
 }
 
@@ -30,6 +31,9 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:2.3.0")
     implementation("io.ktor:ktor-server-core:2.3.0")
     implementation("io.ktor:ktor-server-html-builder:2.3.0")
+    implementation("org.pircbotx:pircbotx:2.1")
+
+
     //implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
 
     implementation("org.slf4j:slf4j-simple:1.7.32")

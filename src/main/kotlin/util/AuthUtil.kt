@@ -8,12 +8,22 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.pircbotx.PircBotX
+import org.pircbotx.Configuration
+
+import org.pircbotx.hooks.ListenerAdapter
+import org.pircbotx.hooks.events.ConnectEvent
+import org.pircbotx.hooks.events.MessageEvent
+import ui.MainViewModel
 import java.awt.Desktop
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.atomic.AtomicReference
+
+
+
 
 
 object AuthUtil {
@@ -24,10 +34,14 @@ object AuthUtil {
     private lateinit var spotifyRefreshToken: String
     private lateinit var twitchRefreshToken: String
 
+    private lateinit var twitchBot: PircBotX
 
+    lateinit var viewModel: MainViewModel
     init {
         startServer()
     }
+
+
 
     private fun startServer() {
         //start local server to listen for the redirect
@@ -55,7 +69,7 @@ object AuthUtil {
         target: String,
         onTokenReceived: (String) -> Unit
     ) {
-        println("target = ${target}")
+
         if (target == "spotify") {
             // Open Spotify authentication URL
             val authUri = URI("https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=user-read-email%20user-read-private%20user-read-currently-playing%20user-read-playback-state%20user-modify-playback-state&state=spotify")
@@ -109,7 +123,7 @@ object AuthUtil {
 
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
         val json = Gson().fromJson(response.body(), JsonObject::class.java)
-        println("json = ${json}")
+
         return json
     }
 
@@ -127,7 +141,7 @@ object AuthUtil {
 
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
         val json = Gson().fromJson(response.body(), JsonObject::class.java)
-        println("json = ${json}")
+
         return json
 
     }
@@ -145,5 +159,51 @@ object AuthUtil {
         val json = Gson().fromJson(response.body(), JsonObject::class.java)
         return json["access_token"].asString
     }
+
+    fun connectToTwitchChat(nickname: String, channel: String) {
+        val config = Configuration.Builder()
+            .setName(nickname)
+            .setServerHostname("irc.chat.twitch.tv")
+            .setServerPort(6667)
+            .setServerPassword(Env.botOauthToken)
+            .addAutoJoinChannel("#$channel")
+            .addListener(object : ListenerAdapter() {
+                override fun onMessage(event: MessageEvent) {
+                    println("[Twitch Chat] ${event.user?.nick}: ${event.message}")
+                    if (event.message.startsWith("!add")){
+                        val song = event.message.substringAfter(" ")
+
+                        viewModel.searchAndAddSongToQueue(song)
+                    }
+                    if (event.message.startsWith("!queue")){
+
+                        sendMessageToTwitchChat("${viewModel.currentQueue}")
+
+                    }
+                }
+            })
+            .buildConfiguration()
+
+        twitchBot = PircBotX(config)
+
+        val botThread = Thread {
+            twitchBot.startBot()
+        }
+        botThread.isDaemon = true
+        botThread.start()
+    }
+
+    fun sendMessageToTwitchChat(message: String) {
+        twitchBot.sendIRC().message("#muminslayer", message)
+    }
+
+    fun disconnectFromTwitchChat() {
+        twitchBot.stopBotReconnect()
+        twitchBot.close()
+    }
+
+
+    // Function to listen for messages in Twitch chat
+
 
 }

@@ -84,6 +84,14 @@ fun MainView(viewModel: MainViewModel) {
                 viewModel.responseMessage?.let {
                     Text(it)
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(onClick = {
+                    viewModel.sendMessageToTwitch()
+                }){
+                    Text("Test")
+                }
             }
         }
     }

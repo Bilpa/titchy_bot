@@ -19,4 +19,7 @@ object Env {
 
     val twitchClientSecret: String
         get( )= dotenv["TWITCH_CLIENT_SECRET"] ?: error("TWITCH_CLIENT_SECRET not found")
+
+    val botOauthToken: String
+        get() = dotenv["BOT_OAUTH_TOKEN"] ?: error(("BOT_OAUTH_TOKEN not found"))
 }

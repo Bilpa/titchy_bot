@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+
 import kotlinx.coroutines.*
 import model.*
 
@@ -22,6 +23,9 @@ class MainViewModel : ViewModel() {
     var nextInQueue by mutableStateOf<Track?>(null)
     var responseMessage by mutableStateOf<String?>(null)
     var recentlyAddedTrack by mutableStateOf<Track?>(null)
+    var currentQueue by mutableStateOf<String?>(null)
+
+    val channelName = "muminslayer"
 
     private var pollingJob: Job? = null
 
@@ -41,8 +45,12 @@ class MainViewModel : ViewModel() {
         AuthUtil.authenticate(Env.twitchClientId, Env.twitchClientSecret, "twitch") { token ->
             twitchToken = token
             println("twitchToken = ${twitchToken}")
+            connectToTwitchChat()
+
         }
     }
+
+
 
     private fun startPollingCurrentlyPlaying(token: String) {
         pollingJob?.cancel()
@@ -112,6 +120,13 @@ class MainViewModel : ViewModel() {
                 println("response = ${response.body()}")
                 if (response.isSuccessful){
                     nextInQueue = response.body()?.queue?.firstOrNull()
+                    currentQueue = "current queue is: "
+                    var count = 1
+                    response.body()?.queue?.forEach { track ->
+                        currentQueue += "$count. ${track.name} by ${track.artists.get(0).name} "
+                        count++
+                    }
+                    println("queue = ${currentQueue}")
                 } else{
                     nextInQueue = null
                 }
@@ -128,6 +143,8 @@ class MainViewModel : ViewModel() {
         }
 
     }
+
+
 
     fun searchAndAddSongToQueue(query: String){
         viewModelScope.launch(Dispatchers.Main) {
@@ -195,4 +212,15 @@ class MainViewModel : ViewModel() {
             }
         }
     }
+
+    private fun connectToTwitchChat() {
+        AuthUtil.connectToTwitchChat("titchy_bot", "muminslayer")
+
+    }
+
+    public fun sendMessageToTwitch(){
+        AuthUtil.sendMessageToTwitchChat("testing...")
+    }
+
+
 }

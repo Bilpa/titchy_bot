@@ -11,6 +11,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import ui.MainView
 import ui.MainViewModel
+import util.AuthUtil
 import util.Env
 
 @Composable
@@ -31,6 +32,9 @@ fun main() = application {
     println("starting app...")
     Window(onCloseRequest = ::exitApplication) {
         val viewModel = remember { MainViewModel() }
+
+        AuthUtil.viewModel = viewModel
+
         MainView(viewModel)
     }
 }
