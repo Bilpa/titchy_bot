@@ -69,7 +69,7 @@ object AuthUtil {
         target: String,
         onTokenReceived: (String) -> Unit
     ) {
-        println("target = ${target}")
+
         if (target == "spotify") {
             // Open Spotify authentication URL
             val authUri = URI("https://accounts.spotify.com/authorize?client_id=$clientId&response_type=code&redirect_uri=$redirectUri&scope=user-read-email%20user-read-private%20user-read-currently-playing%20user-read-playback-state%20user-modify-playback-state&state=spotify")
@@ -123,7 +123,7 @@ object AuthUtil {
 
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
         val json = Gson().fromJson(response.body(), JsonObject::class.java)
-        println("json = ${json}")
+
         return json
     }
 
@@ -141,7 +141,7 @@ object AuthUtil {
 
         val response = client.send(request, HttpResponse.BodyHandlers.ofString())
         val json = Gson().fromJson(response.body(), JsonObject::class.java)
-        println("json = ${json}")
+
         return json
 
     }
@@ -160,7 +160,7 @@ object AuthUtil {
         return json["access_token"].asString
     }
 
-    fun connectToTwitchChat(nickname: String, oauthToken: String, channel: String) {
+    fun connectToTwitchChat(nickname: String, channel: String) {
         val config = Configuration.Builder()
             .setName(nickname)
             .setServerHostname("irc.chat.twitch.tv")
@@ -172,7 +172,7 @@ object AuthUtil {
                     println("[Twitch Chat] ${event.user?.nick}: ${event.message}")
                     if (event.message.startsWith("!add")){
                         val song = event.message.substringAfter(" ")
-                        sendMessageToTwitchChat("${event.user?.nick} wants to add ${song}")
+
                         viewModel.searchAndAddSongToQueue(song)
                     }
                     if (event.message.startsWith("!queue")){
@@ -185,6 +185,7 @@ object AuthUtil {
             .buildConfiguration()
 
         twitchBot = PircBotX(config)
+
         val botThread = Thread {
             twitchBot.startBot()
         }

@@ -214,7 +214,7 @@ class MainViewModel : ViewModel() {
     }
 
     private fun connectToTwitchChat() {
-        AuthUtil.connectToTwitchChat("titchy_bot", Env.botOauthToken, "muminslayer")
+        AuthUtil.connectToTwitchChat("titchy_bot", "muminslayer")
 
     }
 
