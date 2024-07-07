@@ -36,10 +36,12 @@ fun MainView(viewModel: MainViewModel) {
     }
 
     MaterialTheme {
-        Box( modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        SnackbarHost(hostState = snackBarHostState)
+        Box( modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.BottomCenter) {
+
             Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
 
-                SnackbarHost(hostState = snackBarHostState)
+
 
                 if (viewModel.spotifyToken == null || viewModel.twitchToken == null) {
                     Button(onClick = {
@@ -58,29 +60,31 @@ fun MainView(viewModel: MainViewModel) {
 //                        Text("ID: ${it.id}")
 //                        Text("Email: ${it.email}")
 //                    } ?: Text("Loading profile...")
-                    //Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     viewModel.currentlyPlaying?.item?.let {
 
                         println(it.uri)
-                        Text("Currently Playing: ${it.name} by ${it.artists.joinToString(", ") { artist -> artist.name }}", color = Color.Gray, fontWeight = FontWeight.Bold)
+                        Text("Currently Playing: ${it.name} by ${it.artists.joinToString(", ") { artist -> artist.name }}",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold)
                     } ?: Text("Not currently playing anything")
 
                     viewModel.nextInQueue?.let {
-                        Text("Next in queue: ${it.name} by ${it.artists.joinToString(", ") {artist -> artist.name}}", color = Color.Gray, fontWeight = FontWeight.Bold)
+                        Text("Next in queue: ${it.name} by ${it.artists.joinToString(", ") {artist -> artist.name}}",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold)
                     } ?: Text("Nothing in queue")
-
+                    Spacer(modifier = Modifier.height(20.dp))
 //                    Row (verticalAlignment = Alignment.Bottom,
-//                        horizontalArrangement = Arrangement.SpaceBetween,
+//                        horizontalArrangement = Arrangement.SpaceAround,
 //                        modifier = Modifier.fillMaxWidth().wrapContentHeight()){
 //                        TextField(
 //                            value = trackTitle,
 //                            onValueChange = {trackTitle = it},
 //                            label = { Text("song title") },
-//                            modifier = Modifier.fillMaxWidth()
+//
 //                        )
-//
-//
 //
 //                        Button(onClick = {
 //                            viewModel.searchAndAddSongToQueue(trackTitle)
@@ -92,17 +96,19 @@ fun MainView(viewModel: MainViewModel) {
 
 
 
-                    viewModel.responseMessage?.let {
-                        Text(it)
-                    }
+//                    viewModel.responseMessage?.let {
+//                        Text(it)
+//                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+//                    Spacer(modifier = Modifier.height(16.dp))
 
-                    Button(onClick = {
-                        viewModel.sendMessageToTwitch()
-                    }){
-                        Text("Test")
-                    }
+//                    Button(onClick = {
+//                        viewModel.refreshTokenAndRetry {
+//                            println("new token: $it")
+//                        }
+//                    }){
+//                        Text("Refresh token")
+//                    }
                 }
 
             }

@@ -56,7 +56,7 @@ class MainViewModel : ViewModel() {
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch(Dispatchers.IO) {
             while (isActive){
-                loadCurrentlyPlaying(token)
+                loadCurrentlyPlaying(spotifyToken!!)
                 delay(5000)
             }
         }
@@ -94,6 +94,8 @@ class MainViewModel : ViewModel() {
                     loadUserQueue(token)
                 }
                 else {
+                    refreshTokenAndRetry { loadCurrentlyPlaying(it) }
+                    println("on respons fail: response = ${response.message()}")
                     currentlyPlaying = null
                 }
 
@@ -128,14 +130,20 @@ class MainViewModel : ViewModel() {
                     }
                     println("queue = ${currentQueue}")
                 } else{
+                    currentQueue = "failed to load queue"
+                    println("on response fail: response.Message = ${response.message()}")
+
                     nextInQueue = null
                 }
             } catch (e:HttpException){
                 if (e.code() == 401) {
+                    println("load user queue error 401")
+                    println("e.message() = ${e.message()}")
                     refreshTokenAndRetry { newToken ->
                         loadUserQueue(newToken)
                     }
                 } else {
+                    println("load user queue not error 401")
                     e.printStackTrace()
                     nextInQueue = null
                 }
@@ -200,7 +208,7 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    private fun refreshTokenAndRetry(onTokenRefreshed: (String) -> Unit) {
+    fun refreshTokenAndRetry(onTokenRefreshed: (String) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
 
             try {

@@ -39,7 +39,7 @@ fun main() = application {
 
     var borderVisible by remember { mutableStateOf(true) }
 
-    Window(onCloseRequest = ::exitApplication, undecorated = true, transparent = true) {
+    Window(onCloseRequest = ::exitApplication, undecorated = false, transparent = false) {
         val viewModel = remember { MainViewModel() }
 
 
