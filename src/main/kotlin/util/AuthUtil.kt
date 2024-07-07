@@ -105,8 +105,14 @@ object AuthUtil {
 
         if (target == "spotify") {
             spotifyRefreshToken = response["refresh_token"].asString
+            println("target = ${target}")
+            println("accessToken = ${accessToken}")
+            println("spotifyRefreshToken = ${spotifyRefreshToken}")
         } else {
             twitchRefreshToken = response["refresh_token"].asString
+            println("target = ${target}")
+            println("accessToken = ${accessToken}")
+            println("twitchRefreshToken = ${twitchRefreshToken}")
         }
 
         onTokenReceived(accessToken)
@@ -163,8 +169,9 @@ object AuthUtil {
     fun connectToTwitchChat(nickname: String, channel: String) {
         val config = Configuration.Builder()
             .setName(nickname)
-            .setServerHostname("irc.chat.twitch.tv")
-            .setServerPort(6667)
+            .addServer("irc.chat.twitch.tv", 6667)
+//            .setServerHostname("irc.chat.twitch.tv")
+//            .setServerPort(6667)
             .setServerPassword(Env.botOauthToken)
             .addAutoJoinChannel("#$channel")
             .addListener(object : ListenerAdapter() {
@@ -203,7 +210,7 @@ object AuthUtil {
     }
 
 
-    // Function to listen for messages in Twitch chat
+
 
 
 }
