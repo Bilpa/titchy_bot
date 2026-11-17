@@ -15,6 +15,7 @@ import model.Tracks
 import model.UserQueue
 import network.SpotifyApiService
 import okhttp3.ResponseBody.Companion.toResponseBody
+import java.io.IOException
 import retrofit2.HttpException
 import retrofit2.Response
 import kotlin.test.AfterTest
@@ -38,6 +39,7 @@ class MainViewModelTest {
     private val dispatcher = StandardTestDispatcher(scheduler)
     private val api = FakeSpotifyApiService()
     private var refreshCount = 0
+    private val chatMessages = mutableListOf<String>()
     private lateinit var viewModel: MainViewModel
 
     @BeforeTest
@@ -47,6 +49,7 @@ class MainViewModelTest {
             spotifyApi = api,
             refreshSpotifyToken = { refreshCount++; FRESH_TOKEN },
             ioDispatcher = dispatcher,
+            sendChatMessage = { chatMessages += it },
         )
     }
 
@@ -165,53 +168,108 @@ class MainViewModelTest {
     // --- Search and add (the !add chat command) ---
 
     @Test
-    fun `searchAndAddSongToQueue queues the first search hit and reloads the queue`() {
+    fun `successful add queues the first search hit, reloads the queue and confirms in chat`() {
         viewModel.spotifyToken = OLD_TOKEN
 
-        viewModel.searchAndAddSongToQueue("some song")
+        viewModel.searchAndAddSongToQueue("some song", requestedBy = "viewer1")
         scheduler.advanceUntilIdle()
 
         assertEquals("some song", api.lastSearchQuery)
         assertEquals(listOf(FOUND.uri), api.addedUris)
         assertEquals(FOUND, viewModel.recentlyAddedTrack)
-        assertEquals("Song added to queue", viewModel.responseMessage)
         assertEquals(1, api.callCount("queue"))
+        assertEquals(listOf("@viewer1 added to queue: Found by Artist D"), chatMessages)
     }
 
     @Test
-    fun `searchAndAddSongToQueue reports when no song matches`() {
+    fun `reply has no mention when the requester is unknown`() {
         viewModel.spotifyToken = OLD_TOKEN
-        api.search = { Response.success(SearchResult(Tracks(emptyList()))) }
-
-        viewModel.searchAndAddSongToQueue("zzzz")
-        scheduler.advanceUntilIdle()
-
-        assertEquals("Song not found", viewModel.responseMessage)
-        assertTrue(api.addedUris.isEmpty())
-    }
-
-    @Test
-    fun `searchAndAddSongToQueue reports a failed search`() {
-        viewModel.spotifyToken = OLD_TOKEN
-        api.search = { errorResponse(500) }
 
         viewModel.searchAndAddSongToQueue("some song")
         scheduler.advanceUntilIdle()
 
-        assertEquals("search failed", viewModel.responseMessage)
-        assertTrue(api.addedUris.isEmpty())
+        assertEquals(listOf("added to queue: Found by Artist D"), chatMessages)
     }
 
     @Test
-    fun `addSongToQueue reports failure and does not mark the track as added`() {
+    fun `blank query replies with usage and does not call Spotify`() {
+        viewModel.spotifyToken = OLD_TOKEN
+
+        viewModel.searchAndAddSongToQueue("  ", requestedBy = "viewer1")
+        scheduler.advanceUntilIdle()
+
+        assertEquals(0, api.callCount("search"))
+        assertEquals(listOf("@viewer1 usage: !add <song name>"), chatMessages)
+    }
+
+    @Test
+    fun `no search match is reported in chat`() {
+        viewModel.spotifyToken = OLD_TOKEN
+        api.search = { Response.success(SearchResult(Tracks(emptyList()))) }
+
+        viewModel.searchAndAddSongToQueue("zzzz", requestedBy = "viewer1")
+        scheduler.advanceUntilIdle()
+
+        assertTrue(api.addedUris.isEmpty())
+        assertEquals(listOf("@viewer1 couldn't find a song matching \"zzzz\""), chatMessages)
+    }
+
+    @Test
+    fun `failed search is reported in chat`() {
+        viewModel.spotifyToken = OLD_TOKEN
+        api.search = { errorResponse(500) }
+
+        viewModel.searchAndAddSongToQueue("some song", requestedBy = "viewer1")
+        scheduler.advanceUntilIdle()
+
+        assertTrue(api.addedUris.isEmpty())
+        assertEquals(listOf("@viewer1 couldn't search Spotify right now, try again later"), chatMessages)
+    }
+
+    @Test
+    fun `network error during search is reported in chat instead of escaping`() {
+        viewModel.spotifyToken = OLD_TOKEN
+        api.search = { throw IOException("connection reset") }
+
+        viewModel.searchAndAddSongToQueue("some song", requestedBy = "viewer1")
+        scheduler.advanceUntilIdle()
+
+        assertEquals(listOf("@viewer1 couldn't search Spotify right now, try again later"), chatMessages)
+    }
+
+    @Test
+    fun `no active Spotify player is reported in chat`() {
+        viewModel.spotifyToken = OLD_TOKEN
+        api.addToQueue = { errorResponse(404) }
+
+        viewModel.searchAndAddSongToQueue("some song", requestedBy = "viewer1")
+        scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.recentlyAddedTrack)
+        assertEquals(listOf("@viewer1 couldn't add Found by Artist D: no active Spotify player"), chatMessages)
+    }
+
+    @Test
+    fun `other add failures are reported in chat and the track is not marked as added`() {
         viewModel.spotifyToken = OLD_TOKEN
         api.addToQueue = { errorResponse(403) }
 
-        viewModel.addSongToQueue(FOUND)
+        viewModel.searchAndAddSongToQueue("some song", requestedBy = "viewer1")
         scheduler.advanceUntilIdle()
 
-        assertEquals("Failed to add song to queue", viewModel.responseMessage)
         assertNull(viewModel.recentlyAddedTrack)
+        assertEquals(listOf("@viewer1 couldn't add Found by Artist D right now, try again later"), chatMessages)
+    }
+
+    @Test
+    fun `network error while adding is reported in chat`() {
+        viewModel.spotifyToken = OLD_TOKEN
+        api.addToQueue = { throw IOException("connection reset") }
+
+        viewModel.searchAndAddSongToQueue("some song", requestedBy = "viewer1")
+        scheduler.advanceUntilIdle()
+
+        assertEquals(listOf("@viewer1 couldn't add Found by Artist D right now, try again later"), chatMessages)
     }
 
     private companion object {
