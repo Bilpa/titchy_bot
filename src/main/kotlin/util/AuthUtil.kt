@@ -36,6 +36,7 @@ object AuthUtil {
     private lateinit var twitchRefreshToken: String
 
     private lateinit var twitchBot: PircBotX
+    private lateinit var twitchChannel: String
 
     lateinit var viewModel: MainViewModel
     init {
@@ -176,6 +177,7 @@ object AuthUtil {
     }
 
     fun connectToTwitchChat(nickname: String, channel: String) {
+        twitchChannel = channel
         val config = Configuration.Builder()
             .setName(nickname)
             .addServer("irc.chat.twitch.tv", 6667)
@@ -209,7 +211,7 @@ object AuthUtil {
 
 
     fun sendMessageToTwitchChat(message: String) {
-        twitchBot.sendIRC().message("#muminslayer", message)
+        twitchBot.sendIRC().message("#$twitchChannel", message)
     }
 
     fun disconnectFromTwitchChat() {

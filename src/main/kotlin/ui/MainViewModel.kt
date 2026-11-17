@@ -25,8 +25,6 @@ class MainViewModel : ViewModel() {
     var recentlyAddedTrack by mutableStateOf<Track?>(null)
     var currentQueue by mutableStateOf<String?>(null)
 
-    val channelName = "muminslayer"
-
     private var pollingJob: Job? = null
 
     fun authenticateWithSpotify() {
@@ -222,7 +220,7 @@ class MainViewModel : ViewModel() {
     }
 
     private fun connectToTwitchChat() {
-        AuthUtil.connectToTwitchChat("titchy_bot", "muminslayer")
+        AuthUtil.connectToTwitchChat("titchy_bot", Env.twitchChannel)
 
     }
 
