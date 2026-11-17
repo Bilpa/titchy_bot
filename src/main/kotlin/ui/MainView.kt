@@ -70,11 +70,14 @@ fun MainView(viewModel: MainViewModel) {
                             fontWeight = FontWeight.Bold)
                     } ?: Text("Not currently playing anything")
 
+//TODO  -   this turned of until Spotify API issues with queues are fixed
                     viewModel.nextInQueue?.let {
                         Text("Next in queue: ${it.name} by ${it.artists.joinToString(", ") {artist -> artist.name}}",
                             color = Color.White,
                             fontWeight = FontWeight.Bold)
                     } ?: Text("Nothing in queue")
+
+
                     Spacer(modifier = Modifier.height(20.dp))
 //                    Row (verticalAlignment = Alignment.Bottom,
 //                        horizontalArrangement = Arrangement.SpaceAround,
@@ -114,6 +117,8 @@ fun MainView(viewModel: MainViewModel) {
             }
         }
     }
+
+
 }
 
 
