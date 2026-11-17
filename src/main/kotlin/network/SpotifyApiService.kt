@@ -10,6 +10,7 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Query
 
+
 interface SpotifyApiService {
     @GET("me")
     suspend fun getCurrentUserProfile(@Header("Authorization") authHeader: String): SpotifyUser
