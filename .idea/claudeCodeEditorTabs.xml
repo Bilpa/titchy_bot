@@ -1,20 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ClaudeCodeEditorTabs">
-    <option name="activeSessionId" value="538e2b72-b8f0-49bb-b124-c184485659cb" />
+    <option name="activeSessionId" value="96231452-c14f-462e-bc0a-c8a204cea48c" />
     <option name="openSessionIds">
       <list>
         <option value="538e2b72-b8f0-49bb-b124-c184485659cb" />
+        <option value="96231452-c14f-462e-bc0a-c8a204cea48c" />
       </list>
     </option>
     <option name="sessionPaths">
       <map>
         <entry key="538e2b72-b8f0-49bb-b124-c184485659cb" value="/sessions/7c32a52b-c977-4c56-804b-12fd1c4fa98b" />
+        <entry key="96231452-c14f-462e-bc0a-c8a204cea48c" value="/sessions/7c32a52b-c977-4c56-804b-12fd1c4fa98b" />
       </map>
     </option>
     <option name="sessionTitles">
       <map>
         <entry key="538e2b72-b8f0-49bb-b124-c184485659cb" value="/init" />
+        <entry key="96231452-c14f-462e-bc0a-c8a204cea48c" value="fix the silent !add so viewer gets feedback on bot" />
       </map>
     </option>
   </component>
