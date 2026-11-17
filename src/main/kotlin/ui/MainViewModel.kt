@@ -10,12 +10,24 @@ import kotlinx.coroutines.*
 import model.*
 
 import network.SpotifyApi
+import network.SpotifyApiService
 import retrofit2.HttpException
 import retrofit2.Response
 import util.AuthUtil
 import util.Env
 
-class MainViewModel : ViewModel() {
+/**
+ * Dependencies are constructor parameters so tests can substitute fakes; the defaults are the
+ * production wiring. [refreshSpotifyToken] is a lambda so that constructing the ViewModel does not
+ * initialize [AuthUtil] (which starts the OAuth callback server on port 8080).
+ */
+class MainViewModel(
+    private val spotifyApi: SpotifyApiService = SpotifyApi.apiService,
+    private val refreshSpotifyToken: () -> String = {
+        AuthUtil.refreshSpotifyToken(Env.spotifyClientId, Env.spotifyClientSecret)
+    },
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+) : ViewModel() {
     var spotifyToken by mutableStateOf<String?>(null)
     var twitchToken by mutableStateOf<String?>(null)
     var userProfile by mutableStateOf<SpotifyUser?>(null)
@@ -29,14 +41,15 @@ class MainViewModel : ViewModel() {
 
     fun authenticateWithSpotify() {
         AuthUtil.authenticate(Env.spotifyClientId, Env.spotifyClientSecret, "spotify") { token ->
-
-            spotifyToken = token
-            loadUserProfile(token)
-            startPollingCurrentlyPlaying(token)
-            println("spotifyToken = ${spotifyToken}")
-
-
+            onSpotifyAuthenticated(token)
         }
+    }
+
+    internal fun onSpotifyAuthenticated(token: String) {
+        spotifyToken = token
+        loadUserProfile(token)
+        startPollingCurrentlyPlaying(token)
+        println("spotifyToken = ${spotifyToken}")
     }
 
     fun authenticateWithTwitch(){
@@ -52,7 +65,7 @@ class MainViewModel : ViewModel() {
 
     private fun startPollingCurrentlyPlaying(token: String) {
         pollingJob?.cancel()
-        pollingJob = viewModelScope.launch(Dispatchers.IO) {
+        pollingJob = viewModelScope.launch(ioDispatcher) {
             while (isActive){
                 loadCurrentlyPlaying(spotifyToken!!)
                 delay(5000)
@@ -64,7 +77,7 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             val authHeader = "Bearer $token"
             try {
-                val profile = SpotifyApi.apiService.getCurrentUserProfile(authHeader)
+                val profile = spotifyApi.getCurrentUserProfile(authHeader)
                 userProfile = profile
             } catch (e: HttpException) {
                 if (e.code() == 401) {
@@ -83,7 +96,7 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.Main) {
             val authHeader = "Bearer $token"
             try {
-                val response: Response<CurrentlyPlaying?> = SpotifyApi.apiService.getCurrentlyPlaying(authHeader)
+                val response: Response<CurrentlyPlaying?> = spotifyApi.getCurrentlyPlaying(authHeader)
 
                 if (response.isSuccessful){
                     currentlyPlaying = response.body()
@@ -116,7 +129,7 @@ class MainViewModel : ViewModel() {
             val authHeader = "Bearer $token"
             try {
 
-                val response: Response<UserQueue?> = SpotifyApi.apiService.getUserQueue(authHeader)
+                val response: Response<UserQueue?> = spotifyApi.getUserQueue(authHeader)
                 println("response = ${response.body()}")
                 if (response.isSuccessful){
                     nextInQueue = response.body()?.queue?.firstOrNull()
@@ -157,7 +170,7 @@ class MainViewModel : ViewModel() {
             val authHeader = "Bearer $spotifyToken"
 
             try {
-                val response: Response<SearchResult> = SpotifyApi.apiService.searchSong(authHeader,query)
+                val response: Response<SearchResult> = spotifyApi.searchSong(authHeader,query)
                 if(response.isSuccessful){
                     val track = response.body()?.tracks?.items?.firstOrNull()
                     if(track != null){
@@ -184,7 +197,7 @@ class MainViewModel : ViewModel() {
             val authHeader = "Bearer ${spotifyToken}"
 
             try {
-                val response: Response<Unit> = SpotifyApi.apiService.addSongToQueue(authHeader, track.uri)
+                val response: Response<Unit> = spotifyApi.addSongToQueue(authHeader, track.uri)
                 if (response.isSuccessful){
                     loadUserQueue(spotifyToken!!)
                     recentlyAddedTrack = track
@@ -207,10 +220,10 @@ class MainViewModel : ViewModel() {
     }
 
     fun refreshTokenAndRetry(onTokenRefreshed: (String) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
 
             try {
-                val newToken = AuthUtil.refreshSpotifyToken(Env.spotifyClientId, Env.spotifyClientSecret)
+                val newToken = refreshSpotifyToken()
                 spotifyToken = newToken
                 onTokenRefreshed(newToken)
             } catch (e: Exception) {
