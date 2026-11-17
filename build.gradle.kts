@@ -37,6 +37,15 @@ dependencies {
     //implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1")
 
     implementation("org.slf4j:slf4j-simple:1.7.32")
+
+    testImplementation(kotlin("test"))
+    // Versions match the okhttp and coroutines versions used above.
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.9.3")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 compose.desktop {

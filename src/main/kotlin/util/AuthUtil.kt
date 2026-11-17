@@ -187,9 +187,9 @@ object AuthUtil {
                 override fun onMessage(event: MessageEvent) {
                     println("[Twitch Chat] ${event.user?.nick}: ${event.message}")
                     if (event.message.startsWith("!add")){
-                        val song = event.message.substringAfter(" ")
+                        val song = event.message.substringAfter(" ", missingDelimiterValue = "").trim()
 
-                        viewModel.searchAndAddSongToQueue(song)
+                        viewModel.searchAndAddSongToQueue(song, requestedBy = event.user?.nick)
                     }
                     if (event.message.startsWith("!queue")){
 
